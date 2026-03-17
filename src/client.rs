@@ -850,7 +850,9 @@ pub fn run_remote(terminal: &mut Terminal<CrosstermBackend<crate::platform::Psmu
                         }
                         paste_confirmed = true;
                     }
-                    Event::Key(key) if key.kind == KeyEventKind::Press || key.kind == KeyEventKind::Repeat => {
+                    Event::Key(mut key) if key.kind == KeyEventKind::Press || key.kind == KeyEventKind::Repeat => {
+                        #[cfg(windows)]
+                        crate::platform::augment_enter_shift(&mut key);
                         // During paste suppression, discard text keys (chars,
                         // Enter, Tab, Space) that VS Code injects as ConPTY
                         // echoes after a right-click clipboard paste/copy.
@@ -1564,11 +1566,11 @@ pub fn run_remote(terminal: &mut Terminal<CrosstermBackend<crate::platform::Psmu
                                         if !paste_pend.is_empty() {
                                             paste_pend.push('\n');
                                         } else {
-                                            cmd_batch.push("send-key enter\n".into());
+                                            cmd_batch.push(format!("send-key {}\n", modified_key_name("Enter", key.modifiers)));
                                         }
                                     }
                                     #[cfg(not(windows))]
-                                    { cmd_batch.push("send-key enter\n".into()); }
+                                    { cmd_batch.push(format!("send-key {}\n", modified_key_name("Enter", key.modifiers))); }
                                 }
                                 KeyCode::Tab => {
                                     #[cfg(windows)]
